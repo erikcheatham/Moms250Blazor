@@ -13,7 +13,7 @@ To run this application on your computer you will need several things first
 
 3)  If you don't set up a SendGrid email account then comment out my Transient Email Sender in Program.cs - builder.Services.AddTransient<IEmailSender, EmailSender>();
 and then uncomment the Singleton EmailSender that was boilerplate when the project was created, you will also need to go and uncomment out the dependency injection cases in the components and comment out mine also
-Just search for these in the project to uncomment @* @inject IEmailSender<ApplicationUser> EmailSender *@
+Just search for these in the project to uncomment `@* @inject IEmailSender<ApplicationUser> EmailSender *@`
 and then search for these to comment out @inject IEmailSender es
 
 4)  Lastly after you create your first user, manually update [dbo].[AspNetUsers] like so for full access
