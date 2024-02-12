@@ -1,0 +1,283 @@
+﻿@page "/Account/Manage"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Moms250Blazor.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject IUsersRepo ur
+@inject IStatesRepo sr
+
+<PageTitle>Profile</PageTitle>
+
+<div class="row">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8"><h1>Profile</h1></div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <StatusMessage />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+    <div class="form-group col-sm-2"></div>
+    <div class="form-group col-sm-8">
+        <EditForm Model="Input" FormName="profile" OnSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <ValidationSummary class="text-danger" role="alert" />
+            </div>
+            <div class="form-floating mb-3">
+                <input type="text" value="@username" class="form-control" disabled />
+                <label for="username" class="form-label">Username</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="firstname" @bind-Value="Input.FirstName" class="form-control" />
+                <label for="firstname" class="form-label">First Name</label>
+                <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="lastname" @bind-Value="Input.LastName" class="form-control" />
+                <label for="lastname" class="form-label">Last Name</label>
+                <ValidationMessage For="() => Input.LastName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputSelect id="state" @bind-Value="Input.State" class="form-select" autocomplete="state" aria-required="false">
+                    @if (Input.State is not null)
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            @if (s.S == Input.State)
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            if (s.S == "IL")
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                </InputSelect>
+                <label for="state">State</label>
+                <ValidationMessage For="() => Input.State" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" class="form-control" />
+                <label for="phone-number" class="form-label">Phone number</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.ManagerId" class=" form-select" autocomplete="managerid" aria-required="false">
+                    <option value="">Select a Manager</option>
+                    @foreach (var m in managerList ?? new List<MyListItems>())
+                    {
+                        @if (Input.ManagerId == m.S)
+                        {
+                            <option selected value="@m.S">@m.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@m.S">@m.Text</option>
+                        }
+                    }
+                </InputSelect>
+                <label for="managerid">Manager ID</label>
+                <ValidationMessage For="() => Input.ManagerId" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Residence" class="form-control" autocomplete="residence" aria-required="false" />
+                <label for="residence">Residence</label>
+                <ValidationMessage For="() => Input.Residence" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Comments" class="form-control" autocomplete="comments" aria-required="false" />
+                <label for="comments">Comments</label>
+                <ValidationMessage For="() => Input.Comments" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PreferencesAndSkills" class="form-control" autocomplete="preferencesandskills" aria-required="false" />
+                <label for="preferencesandskills">Preferences and Skills</label>
+                <ValidationMessage For="() => Input.PreferencesAndSkills" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Chapter" class="form-control" autocomplete="chapter" aria-required="false" />
+                <label for="chapter">Chapter</label>
+                <ValidationMessage For="() => Input.Chapter" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+        </EditForm>
+    </div>
+    <div class="form-group col-sm-2"></div>
+</div>
+
+@code {
+    private ApplicationUser user = default!;
+    private string? username;
+    private string? phoneNumber;
+    List<MyListItems> stateList => Task.Run(() => sr.GetMyListItemsStatesAsync()).GetAwaiter().GetResult() ?? new List<MyListItems>();
+    List<MyListItems> managerList => Task.Run(() => ur.GetMyListItemsAllUsersAsync(MyUserListItemsType.FullNameAsSelectorManagersOnly)).GetAwaiter().GetResult() ?? new List<MyListItems>();
+
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        username = await UserManager.GetUserNameAsync(user);
+        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        Input.PhoneNumber ??= phoneNumber;
+
+        Input.FirstName ??= user.FirstName;
+        Input.LastName ??= user.LastName;
+        Input.State ??= user.State;
+        Input.ManagerId ??= user.ManagerId;
+        Input.Residence ??= user.Residence;
+        Input.Comments ??= user.Comments;
+        Input.PreferencesAndSkills ??= user.PreferencesAndSkills;
+        Input.Chapter ??= user.Chapter;
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (Input.PhoneNumber != phoneNumber)
+        {
+            // var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+            // if (!setPhoneResult.Succeeded)
+            // {
+            //     RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+            // }
+
+            user.PhoneNumber = Input.PhoneNumber;
+        }
+
+        if (Input.FirstName != user.FirstName)
+        {
+            user.FirstName = Input.FirstName;
+            user.FullName = $"{Input.LastName}, {Input.FirstName}";
+        }
+
+        if (Input.LastName != user.LastName)
+        {
+            user.LastName = Input.LastName;
+            user.FullName = $"{Input.LastName}, {Input.FirstName}";
+        }
+
+        if (Input.State != user.State)
+        {
+            user.State = Input.State;
+        }
+
+        if (Input.ManagerId != user.ManagerId)
+        {
+            user.ManagerId = Input.ManagerId;
+        }
+
+        if (Input.Residence != user.Residence)
+        {
+            user.Residence = Input.Residence;
+        }
+
+        if (Input.Comments != user.Comments)
+        {
+            user.Comments = Input.Comments;
+        }
+
+        if (Input.PreferencesAndSkills != user.PreferencesAndSkills)
+        {
+            user.PreferencesAndSkills = Input.PreferencesAndSkills;
+        }
+
+        if (Input.Chapter != user.Chapter)
+        {
+            user.Chapter = Input.Chapter;
+        }
+
+        //var u = await ur.GetAspNetUserByUsernameAsync(username ?? "");
+        //var result = await UserManager.UpdateAsync(user);
+        var result = await ur.UpdateApplicationUserAsync(user);
+        if (!result)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to update user.", HttpContext);
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+    }
+
+
+
+    private sealed class InputModel
+    {
+        [Required]
+        [StringLength(150, ErrorMessage = "A first name is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "First Name")]
+        public string? FirstName { get; set; }
+
+        [Required]
+        [StringLength(150, ErrorMessage = "A last name is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Last Name")]
+        public string? LastName { get; set; }
+
+        [Required]
+        [StringLength(2, ErrorMessage = "A state is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "State")]
+        public string? State { get; set; }
+
+        [Phone]
+        [Display(Name = "Phone Number")]
+        public string? PhoneNumber { get; set; }
+
+        [StringLength(450)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Manager ID")]
+        public string? ManagerId { get; set; }
+
+        [StringLength(250, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Residence")]
+        public string? Residence { get; set; }
+
+        [StringLength(450, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Comments")]
+        public string? Comments { get; set; }
+
+        [StringLength(450, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "PreferencesAndSkills")]
+        public string? PreferencesAndSkills { get; set; }
+
+        [StringLength(250, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Chapter")]
+        public string? Chapter { get; set; }
+    }
+}

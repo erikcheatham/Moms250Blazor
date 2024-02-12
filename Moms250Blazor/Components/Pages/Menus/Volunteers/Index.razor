@@ -1,0 +1,111 @@
+﻿@page "/VolunteersMenu"
+
+<PageTitle>Volunteers</PageTitle>
+
+@inject IUsersRepo ur
+
+<div class="container-fluid">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8"><h1>Volunteers</h1></div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+    @if (thisUser?.NationalChair ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">National Chair</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="UserDirectory?UserType=NationalChair">
+                    National Chair Directory
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="UserDirectory?UserType=SeniorCoordinator">
+                    Senior Coordinator Directory
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @if (thisUser?.SeniorCoordinator ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Senior Coordinator</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="UserDirectory?UserType=Coordinator">
+                    Coordinator Directory
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @if (thisUser?.Coordinator ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Regional Coordinator</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="UserDirectory?UserType=Volunteer">
+                    Volunteer Directory
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @* <Footer /> *@
+</div>
+
+@code {
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+
+    ApplicationUser thisUser = new ApplicationUser();
+
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        var user = (await AuthStat).User;
+        if (user?.Identity?.IsAuthenticated ?? false)
+        {
+            userName = user?.Identity?.Name ?? "";
+            if (!string.IsNullOrEmpty(userName))
+                await GetApplicationUser();
+        }
+    }
+
+    async Task GetApplicationUser()
+    {
+        thisUser = await ur.GetApplicationUserByUsernameAsync(userName);
+    }
+}

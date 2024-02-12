@@ -1,0 +1,87 @@
+﻿@page "/UserDirectory"
+
+@inject IUsersRepo ur;
+
+<div class="container-fluid">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            @if (userType == UserType.NationalChair.ToString())
+            {
+                <h1 class="w-100">National Chair Directory</h1>
+                <NavLink class="btn btn-info text-white fw-bold" href="/Account/Register?UserType=NationalChair">
+                    Create New National Chair
+                </NavLink>
+            }
+            else if (userType == UserType.SeniorCoordinator.ToString())
+            {
+                <h1 class="w-100">Senior Coordinator Directory</h1>
+                <NavLink class="btn btn-info text-white fw-bold" href="/Account/Register?UserType=SeniorCoordinator">
+                    Create New Senior Coordinator
+                </NavLink>
+            }
+            else if (userType == UserType.Coordinator.ToString())
+            {
+                <h1 class="w-100">Coordinator Directory</h1>
+                <NavLink class="btn btn-info text-white fw-bold" href="/Account/Register?UserType=Coordinator">
+                    Create New Coordinator
+                </NavLink>
+            }
+            else if (userType == UserType.Volunteer.ToString())
+            {
+                <h1 class="w-100">Volunteer Directory</h1>
+                <NavLink class="btn btn-info text-white fw-bold" href="/Account/Register?UserType=Volunteer">
+                    Create New Volunteer
+                </NavLink>
+            }
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+
+    @foreach (var u in userList ?? new List<ApplicationUser>())
+    {
+        string link = $"UserEditProfile?uid={u.Id}";
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-person">
+                    &nbsp;&nbsp;&nbsp;
+                </span>
+                <NavLink class="link-primary text-decoration-none" href="@link">
+                    @u.UserName - @u.FullName
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @* <Footer /> *@
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "UserType")]
+    public string userType { get; set; } = "";
+
+    List<ApplicationUser> userList = new List<ApplicationUser>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(userType))
+        {
+            if (userType == UserType.NationalChair.ToString())
+                userList = (await GetAllUsersAsync()).Where(x => x.NationalChair == true).ToList();
+            else if (userType == UserType.SeniorCoordinator.ToString())
+                userList = (await GetAllUsersAsync()).Where(x => x.SeniorCoordinator == true).ToList();
+            else if (userType == UserType.Coordinator.ToString())
+                userList = (await GetAllUsersAsync()).Where(x => x.Coordinator == true).ToList();
+            else if (userType == UserType.Volunteer.ToString())
+                userList = (await GetAllUsersAsync()).Where(x => x.Volunteer == true).ToList();
+        }
+    }
+
+    async Task<List<ApplicationUser>> GetAllUsersAsync()
+    {
+        return await ur.GetAllUsersWithProfileDataAsync();
+    }
+}

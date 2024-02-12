@@ -1,0 +1,385 @@
+﻿@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Moms250Blazor.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@* @inject IEmailSender<ApplicationUser> EmailSender *@
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject IUsersRepo ur
+@inject IStatesRepo sr
+
+<PageTitle>Register</PageTitle>
+
+<div class="row">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8"><h1>Register</h1></div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+    <div class="form-group col-sm-2"></div>
+    <div class="form-group col-sm-8">
+        <StatusMessage Message="@Message" />
+        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
+            <DataAnnotationsValidator />
+            @* <h2>Create a new account.</h2> *@
+            <hr />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.UserName" id="username" class="form-control" autocomplete="username" aria-required="true" placeholder="012345" />
+                <label for="username">Member Number</label>
+                <ValidationMessage For="() => Input.UserName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" id="email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
+                <label for="email">Email</label>
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.Password" id="password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <label for="password">Password</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="confirm-password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <label for="confirm-password">Confirm Password</label>
+                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.FirstName" id="FirstName" class="form-control" autocomplete="FirstName" aria-required="true" />
+                <label for="FirstName">First Name</label>
+                <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.LastName" id="LastName" class="form-control" autocomplete="LastName" aria-required="true" />
+                <label for="LastName">Last Name</label>
+                <ValidationMessage For="() => Input.LastName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputSelect id="state" @bind-Value="Input.State" class="form-select" autocomplete="state" aria-required="false">
+                    @if (!string.IsNullOrEmpty(Input.State))
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            @if (s.S == Input.State)
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            if (s.S == "IL")
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                </InputSelect>
+                <label for="state">State</label>
+                <ValidationMessage For="() => Input.State" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" id="PhoneNumber" class="form-control" autocomplete="PhoneNumber" aria-required="true" />
+                <label for="PhoneNumber">Phone Number</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.ManagerId" id="ManagerId" class="form-select" autocomplete="ManagerId" aria-required="false">
+                    <option value="">Select a Manager</option>
+                    @foreach (var m in managerList ?? new List<MyListItems>())
+                    {
+                        @if (Input.ManagerId == m.S)
+                        {
+                            <option selected value="@m.S">@m.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@m.S">@m.Text</option>
+                        }
+                    }
+                </InputSelect>
+                <label for="ManagerId">Manager ID</label>
+            </div>
+            <div class="mb-3">
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <InputCheckbox @bind-Value="Input.Volunteer" id="Volunteer" class="form-control form-check-input form-m250-checkbox" />
+                    <label for="Volunteer" class="fw-bold form-m250-checkbox-label">Volunteer</label>
+                </div>
+            </div>
+            @if (userType == UserType.Coordinator.ToString() || userType == UserType.SeniorCoordinator.ToString() || userType == UserType.NationalChair.ToString())
+            {
+                <div class="mb-3">
+                    <div class="form-group col d-grid justify-content-center text-center">
+                        <InputCheckbox @bind-Value="Input.Coordinator" id="Coordinator" class="form-control form-check-input form-m250-checkbox" />
+                        <label for="Coordinator" class="fw-bold form-m250-checkbox-label">Coordinator</label>
+                    </div>
+                </div>
+            }
+            @if (userType == UserType.SeniorCoordinator.ToString() || userType == UserType.NationalChair.ToString())
+            {
+                <div class="mb-3">
+                    <div class="form-group col d-grid justify-content-center text-center">
+                        <InputCheckbox @bind-Value="Input.SeniorCoordinator" id="SeniorCoordinator" class="form-control form-check-input form-m250-checkbox" />
+                        <label for="SeniorCoordinator" class="fw-bold form-m250-checkbox-label">Senior Coordinator</label>
+                    </div>
+                </div>
+            }
+            @if (userType == UserType.NationalChair.ToString())
+            {
+                <div class="mb-3">
+                    <div class="form-group col d-grid justify-content-center text-center">
+                        <InputCheckbox @bind-Value="Input.NationalChair" id="NationalChair" class="form-control form-check-input form-m250-checkbox" />
+                        <label for="NationalChair" class="fw-bold form-m250-checkbox-label">National Chair</label>
+                    </div>
+                </div>
+            }
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Residence" id="Residence" class="form-control" autocomplete="Residence" aria-required="false" />
+                <label for="Residence">Residence</label>
+                <ValidationMessage For="() => Input.Residence" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <InputCheckbox @bind-Value="Input.AppAngel" id="AppAngel" class="form-control form-check-input form-m250-checkbox" />
+                    <label for="AppAngel" class="fw-bold form-m250-checkbox-label">App Angel</label>
+                </div>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Comments" id="Comments" class="form-control" autocomplete="Comments" aria-required="false" />
+                <label for="comments">Comments</label>
+                <ValidationMessage For="() => Input.Comments" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PreferencesAndSkills" id="PreferencesAndSkills" class="form-control" autocomplete="PreferencesAndSkills" aria-required="false" />
+                <label for="PreferencesAndSkills">Preferences and Skills</label>
+                <ValidationMessage For="() => Input.PreferencesAndSkills" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Chapter" id="Chapter" class="form-control" autocomplete="Chapter" aria-required="false" />
+                <label for="Chapter">Chapter</label>
+                <ValidationMessage For="() => Input.Chapter" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary mb-4">Register</button>
+        </EditForm>
+    </div>
+    <div class="form-group col-sm-2"></div>
+    @* <div class="col-md-6 col-md-offset-2">
+    <section>
+    <h3>Use another service to register.</h3>
+    <hr />
+    <ExternalLoginPicker />
+    </section>
+    </div> *@
+</div>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "UserType")]
+    public string userType { get; set; } = "";
+
+    // [SupplyParameterFromQuery]
+    // private string? ReturnUrl { get; set; }
+
+    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+
+    List<MyListItems> stateList => Task.Run(() => sr.GetMyListItemsStatesAsync()).GetAwaiter().GetResult() ?? new List<MyListItems>();
+    List<MyListItems> managerList => Task.Run(() => ur.GetMyListItemsAllUsersAsync(MyUserListItemsType.FullNameAsSelectorManagersOnly)).GetAwaiter().GetResult() ?? new List<MyListItems>();
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = CreateUser();
+
+        await UserStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
+        var emailStore = GetEmailStore();
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+        user.FirstName = Input.FirstName;
+        user.LastName = Input.LastName;
+        user.FullName = $"{Input.LastName}, {Input.FirstName}";
+        user.State = Input.State;
+        user.PhoneNumber = Input.PhoneNumber;
+        user.Active = true;
+        user.ManagerId = Input.ManagerId;
+        user.Volunteer = Input.Volunteer;
+        user.Coordinator = true;
+        user.SeniorCoordinator = Input.SeniorCoordinator;
+        user.NationalChair = Input.NationalChair;
+        user.Residence = Input.Residence;
+        user.AppAngel = Input.AppAngel;
+        user.Comments = Input.Comments;
+        user.PreferencesAndSkills = Input.PreferencesAndSkills;
+        user.Chapter = Input.Chapter;
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            return;
+        }
+
+        Logger.LogInformation("User created a new account with password.");
+
+        //var userId = await UserManager.GetUserIdAsync(user);
+        //var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+
+        //Confirm Code
+        //await UserManager.ConfirmEmailAsync(user, code);
+
+        //code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        //var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+        //    NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+        //    new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        //await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        //if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        //{
+        //    RedirectManager.RedirectTo(
+        //        "Account/RegisterConfirmation",
+        //        new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        //}
+
+        if (string.IsNullOrEmpty(userType))
+        {
+            await SignInManager.SignInAsync(user, isPersistent: false);
+            RedirectManager.RedirectTo($"{ContextSettings.WebSiteURL}/");
+        }
+        else
+        {
+            RedirectManager.RedirectTo($"{ContextSettings.WebSiteURL}/UserDirectory?UserType={userType}");
+        }
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [StringLength(256, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Member Number")]
+        public string UserName { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [StringLength(150, ErrorMessage = "A first name is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [StringLength(150, ErrorMessage = "A last name is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [StringLength(2, ErrorMessage = "A state is required.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "State")]
+        public string State { get; set; } = "";
+
+        [Display(Name = "Phone Number")]
+        public string? PhoneNumber { get; set; }
+
+        [StringLength(450)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Manager ID")]
+        public string? ManagerId { get; set; }
+
+        [Display(Name = "National Chair")]
+        public bool NationalChair { get; set; }
+
+        [Display(Name = "Senior Coordinator")]
+        public bool SeniorCoordinator { get; set; }
+
+        [Display(Name = "Coordinator")]
+        public bool Coordinator { get; set; }
+
+        [Display(Name = "Volunteer")]
+        public bool Volunteer { get; set; } = true;
+
+        [StringLength(250, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Residence")]
+        public string? Residence { get; set; }
+
+        [Display(Name = "App Angel")]
+        public bool AppAngel { get; set; }
+
+        [StringLength(450, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Comments")]
+        public string? Comments { get; set; }
+
+        [StringLength(450, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "PreferencesAndSkills")]
+        public string? PreferencesAndSkills { get; set; }
+
+        [StringLength(250, ErrorMessage = "The {0} cannot be more than {1} characters long.")]
+        [DataType(DataType.Text)]
+        [Display(Name = "Chapter")]
+        public string? Chapter { get; set; }
+    }
+}

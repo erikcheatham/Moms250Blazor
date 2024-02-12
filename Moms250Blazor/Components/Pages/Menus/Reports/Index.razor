@@ -1,0 +1,221 @@
+﻿@page "/ReportsMenu"
+
+<PageTitle>Reports</PageTitle>
+
+@inject IUsersRepo ur
+
+<div class="container-fluid">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8"><h1>Reports</h1></div>
+        <div class="form-group col-sm-2"></div>
+    </div><br /><br />
+    @if (thisUser?.NationalChair ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">National Chair Reports</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="NationalChairReports?AppStatus=verified">
+                    Assignments by application status marked as verified list
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="NationalChairReports?AppStatus=removed">
+                    Assignments by application status marked as removed list
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @if (thisUser?.SeniorCoordinator ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Senior Coordinator Reports</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="SeniorCoordinatorReports?ReportType=assignmentsByCoord">
+                    Assignments by chosen coordinator
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="SeniorCoordinatorReports?ReportType=assignmentsByVolunteersThenState">
+                    Assignments by chosen volunteer name then chosen volunteer state
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="SeniorCoordinatorReports?ReportType=assignmentsByRequests">
+                    Assignments by senior coordinator requests or coordinator requests
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @if (thisUser?.Coordinator ?? false)
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Regional Coordinator Reports</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsAToZ">
+                    Assignments by applicant name in alphabetical order
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByAgeBasedOnDateAssigned">
+                    Assignments most recently assigned
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByStateThenAToZ">
+                    Assignments by applicant state then by applicant name in alphabetical order
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByTypeThenStatus">
+                    Assignments by application type then by application status
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByMailed">
+                    Assignments most recently completed or mailed
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByLeadVolunteer">
+                    Assignments by all lead volunteers
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByVolunteer">
+                    Assignments by all volunteers
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByLastUpdate">
+                    Assignments most recently changed
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByMyVolunteers">
+                    All of my volunteers's assignments
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <span class="oi oi-list">&nbsp;&nbsp;&nbsp;</span>
+                <NavLink class="link-primary text-decoration-none" href="CoordinatorReports?ReportType=assignmentsByChapterContactList">
+                    Assignments by most recent contact with chapter date
+                </NavLink>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+    }
+
+    @* <Footer /> *@
+</div>
+
+@code {
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+
+    ApplicationUser thisUser = new ApplicationUser();
+
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        var user = (await AuthStat).User;
+        if (user?.Identity?.IsAuthenticated ?? false)
+        {
+            userName = user?.Identity?.Name ?? "";
+            if (!string.IsNullOrEmpty(userName))
+                await GetApplicationUser();
+        }
+    }
+
+    async Task GetApplicationUser()
+    {
+        thisUser = await ur.GetApplicationUserByUsernameAsync(userName);
+    }
+}

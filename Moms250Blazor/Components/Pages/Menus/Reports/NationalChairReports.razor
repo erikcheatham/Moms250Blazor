@@ -1,0 +1,210 @@
+﻿@page "/NationalChairReports"
+
+<PageTitle>NationalChairReports</PageTitle>
+
+@inject IAssignmentsRepo ar
+@inject IExceptionLogRepo eLog
+@inject IUsersRepo ur
+@inject IJSRuntime jsRuntime
+
+<div class="container-fluid">
+
+    @if (!loadComplete)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <div class="row mt-2 text-center">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                @if (appStatus == NationalChairReportType.verified.ToString())
+                {
+                    <h1>Assignments by application status marked as verified list</h1>
+                }
+                else if (appStatus == NationalChairReportType.removed.ToString())
+                {
+                    <h1>Assignments by application status marked as removed list</h1>
+                }
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+
+        <br />
+        <br />
+        <button class="form-control fs-5 btn-success fw-bold mb-4 me-2 w-25" id="ExportXLS" name="ExportXLS" @onclick="@ExportAssignments" disabled="@isExporting">Export To Excel</button>
+        <RadzenDataGrid AllowColumnPicking="true" AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSizeChanged="@(args => SavePageSizePref(args))"
+                        PageSize="@thisUser.RadzenDataGridPageSizePref" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Center" ShowPagingSummary="true" class="radzenGridSizer" PageSizeOptions="@pageSizeOptions"
+                        RowSelect="(e => OpenAssignment(e.Id))" Data="@ass" TItem="Assignment" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+            <Columns>
+                <RadzenDataGridColumn TItem="Assignment" Property="Id" Filterable="false" Title="Id" Visible="false" Width="80px" TextAlign="TextAlign.Center" />
+                @* <RadzenDataGridColumn TItem="Assignment" Title="Photo" Frozen="true" Sortable="false" Filterable="false" Width="80px" TextAlign="TextAlign.Center">
+            <Template Context="data">
+            <RadzenImage Path="@data.Photo" class="rz-gravatar" AlternateText="@(data.FirstName + " " + data.LastName)" />
+            </Template>
+            </RadzenDataGridColumn> *@
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicantFullName" Title="Applicant" Width="200px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicantFname" Title="First Name" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicantLname" Title="Last Name" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicantState" Title="State" Width="125px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicantChapter" Title="Chapter" Width="200px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicationType" Title="Type" Width="125px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicationStatus" Title="Status" Width="125px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ApplicationDateAssigned" Title="Date Assigned" FormatString="{0:d}" Width="175px" /> @* Date Assigned *@
+                <RadzenDataGridColumn TItem="Assignment" Property="ChapterContact" Title="Chapter Contact" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Registrar" Title="Registrar" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ChapterContactEmail" Title="Chapter Contact Email" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="VerifyingGenie" Title="VerifyingGenie" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="FirstReview" Title="First Review" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="DateOfLastAirletter" Title="Date of Last AIR" FormatString="{0:d}" Width="175px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ResponseDate" Title="Response Date" FormatString="{0:d}" Width="200px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="DateComplete" Title="Date Mailed" FormatString="{0:d}" Width="175px" /> @* Date Sent/Mailed *@
+                <RadzenDataGridColumn TItem="Assignment" Property="NcupdateRequested" Title="NC Update Requested" FormatString="{0:d}" Width="200px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="LeadVolunteers" Title="Lead Volunteers" Width="400px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="VolunteerState" Title="Vol State" Width="150px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="VolunteerFullNames" Title="Volunteers" Width="400px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="HelpRequest" Title="Help Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ReassignmentRequest" Title="Reassignment Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="HelpRequest" Title="Help Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Aaarequest" Title="AAA Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Artrequest" Title="ART Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="SeniorCoordinatorRequest" Title="Senior Coordinator Request" Width="200px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="CoordinatorRequest" Title="Coordinator Request" Width="200px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="ReturnRequest" Title="Return Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="DocReceived" Title="Doc Received" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="PermissionLetter" Title="Permission Letter" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="SeniorCoordinatorRequest" Title="Senior Coordinator Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="SelectedCoordinator" Title="Selected Coordinator" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="StateProblem" Title="State Problem" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Notes" Title="Notes" Width="300px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="LastContactWithChapterDate" Title="Last Contact With Chapter Date" FormatString="{0:d}" Width="200px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="MemberInitials" Title="Member Initials" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="VolunteerContactChapter" Title="Volunteer Contact Chapter" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="SpecialTeamRequest" Title="Special Team Request" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="PatriotNumber" Title="Patriot Number" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="PatriotName" Title="Patriot Name" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="NewChildOfPatriot" Title="New Child of Patriot" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="NewPatriot" Title="New Patriot" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Correction" Title="Correction" Width="160px" Visible="false" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Created" Title="Created" FormatString="{0:d}" Width="200px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="CreatedBy" Title="CreatedBy" Width="160px" />
+                <RadzenDataGridColumn TItem="Assignment" Property="Modified" Title="Date Modified" FormatString="{0:d}" Width="175px" /> @* Date Modified *@
+                <RadzenDataGridColumn TItem="Assignment" Property="ModifiedBy" Title="Modified By" Width="150px" />
+            </Columns>
+        </RadzenDataGrid>
+    }
+    @* <div style="min-height: 300px">&nbsp;</div> *@
+    @* <Footer /> *@
+</div>
+
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "AppStatus")]
+    public string appStatus { get; set; } = "";
+
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+    public string userFullName { get; set; } = "";
+
+    public bool loadComplete { get; set; } = false;
+    public bool isExporting { get; set; } = false;
+
+    List<Assignment> ass = new List<Assignment>();
+
+    ApplicationUser thisUser = new ApplicationUser();
+
+    IEnumerable<int> pageSizeOptions = new int[] { 10, 15, 20, 25, 30, 35, 40, 45, 50 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        //await GetAssignmentAsync();
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            base.OnInitialized();
+            var user = (await AuthStat).User;
+            if (user?.Identity?.IsAuthenticated ?? false)
+            {
+                userName = user?.Identity?.Name ?? "";
+                await GetApplicationUser();
+                userFullName = thisUser.FullName ?? "";
+            }
+            ass = await ar.GetNationalChairReportListAssignmentsAsync(appStatus ?? "");
+            loadComplete = true;
+            StateHasChanged();
+        }
+        await Task.CompletedTask;
+    }
+
+    async Task GetApplicationUser()
+    {
+        thisUser = await ur.GetApplicationUserByUsernameAsync(userName ?? "");
+    }
+
+    async Task SavePageSizePref(int t)
+    {
+        if (t > 0 && thisUser.RadzenDataGridPageSizePref != t)
+        {
+            thisUser.RadzenDataGridPageSizePref = t;
+            var result = await ur.UpdateApplicationUserAsync(thisUser);
+            if (result)
+            {
+                //await ReloadGrid();
+            }
+        }
+    }
+
+    async void OpenAssignment(int i)
+    {
+        try
+        {
+            await jsRuntime.InvokeAsync<object>("open", $"{ContextSettings.WebSiteURL}/AnyAssignment?ID={i}", "_blank");
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            var msg = $"The following Error occured: {ex?.ToString()}";
+        }
+    }
+
+    async Task ExportAssignments()
+    {
+        try
+        {
+            var fileName = $"{appStatus}_{DateTime.Now.ToString("yyyy-dd-MM_hh_mm_ss")}.xlsx";
+
+            using var workbook = new XLWorkbook();
+            var dataTable = DataHelper.CreateAssignmentDataTable(ass);
+
+            var worksheet = workbook.Worksheets.Add(dataTable, "Assignments");
+            //worksheet.RangeUsed().SetAutoFilter();
+            worksheet.Columns().AdjustToContents();
+
+            using var memoryStream = new MemoryStream();
+            workbook.SaveAs(memoryStream);
+            memoryStream.Position = 0;
+
+            using var streamRef = new DotNetStreamReference(stream: new MemoryStream(memoryStream.ToArray()));
+            await jsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+        }
+    }
+}

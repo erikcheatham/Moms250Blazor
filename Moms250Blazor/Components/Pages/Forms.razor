@@ -1,0 +1,244 @@
+﻿@page "/Forms"
+
+<PageTitle>Forms</PageTitle>
+
+@inject IAttachmentsForAllRepo afar;
+@inject IAzureBlobService azBlob;
+@inject IExceptionLogRepo eLog;
+@inject IUsersRepo ur
+@inject IJSRuntime jsRuntime
+
+<div class="container-fluid">
+
+    @if (!loadComplete)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Forms</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <label class="fw-bold w-100" for="FormsUpload">Upload Forms Attachment(s)</label>
+                <InputFile class="form-control" id="FormsUpload" OnChange="@OnFormsInputFileChange" multiple />
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        @foreach (var f in aByForms)
+        {
+            <div class="row mt-2">
+                <div class="form-group col-sm-2"></div>
+                <div class="form-group col-sm-8">
+                    <NavLink class="btn btn-info text-white fw-bold float-start" @onclick="() => OnFileViewClick(f)">
+                        @f.Name
+                    </NavLink>
+                    <a class="btn btn-danger float-end" @onclick="() => OnFileDeleteClick(f)">Delete</a>
+                </div>
+                <div class="form-group col-sm-2"></div>
+            </div>
+        }
+
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <h3 class="lblNavHeader">Examples and Guidelines</h3>
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <label class="fw-bold w-100" for="ExandGUplaod">Upload Examples and Guidelines Attachment(s)</label>
+                <InputFile class="form-control" id="AttachmentUpload" OnChange="@OnExandGInputFileChange" multiple />
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        @foreach (var f in aByExandG)
+        {
+            <div class="row mt-2">
+                <div class="form-group col-sm-2"></div>
+                <div class="form-group col-sm-8">
+                    <NavLink class="btn btn-info text-white fw-bold float-start" @onclick="() => OnFileViewClick(f)">
+                        @f.Name
+                    </NavLink>
+                    <a class="btn btn-danger float-end" @onclick="() => OnFileDeleteClick(f)">Delete</a>
+                </div>
+                <div class="form-group col-sm-2"></div>
+            </div>
+        }
+        @* <div class="row mt-2">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8">
+                <EventConsole @ref=@uploadConsole />
+            </div>
+            <div class="form-group col-sm-2"></div>
+        </div> *@
+    }
+
+    @* <Footer /> *@
+</div>
+
+@code {
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+    public string userFullName { get; set; } = "";
+    //AspNetUser userProfile = Task.Run(() => ur.GetAspNetUserWithProfileDataAsync(async () => await authenticationStateTask.User.Identity.Name)).GetAwaiter().GetResult() ?? new AspNetUser();
+    List<AttachmentsForAll> a = new List<AttachmentsForAll>();
+    List<AttachmentsForAll> aByForms = new List<AttachmentsForAll>();
+    List<AttachmentsForAll> aByExandG = new List<AttachmentsForAll>();
+
+    public bool loadComplete { get; set; } = false;
+
+    //EventConsole? uploadConsole;
+    IReadOnlyList<IBrowserFile>? selectedFormsFiles;
+    IReadOnlyList<IBrowserFile>? selectedExandGFiles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //await GetAssignmentAsync();
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            base.OnInitialized();
+            var user = (await AuthStat).User;
+            if (user?.Identity?.IsAuthenticated ?? false)
+            {
+                userName = user?.Identity?.Name ?? "";
+                var thisUser = await ur.GetApplicationUserByUsernameAsync(userName ?? "");
+                userFullName = thisUser.FullName ?? "";
+                await GetAttachmentsForAllAsync();
+            }
+        }
+        await Task.CompletedTask;
+    }
+
+    async Task GetAttachmentsForAllAsync()
+    {
+        a = await afar.GetAssignmentAttachmentsForAllAsync();
+
+        aByForms = a.Where(x => x.Group == AttachmentsForAllTypes.Forms.ToString()).ToList();
+        aByExandG = a.Where(x => x.Group == AttachmentsForAllTypes.ExandG.ToString()).ToList();
+        loadComplete = true;
+        StateHasChanged();
+    }
+
+    async void OnFormsInputFileChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            selectedFormsFiles = e.GetMultipleFiles();
+            //uploadConsole?.Log($"{selectedFormsFiles.Count} file(s) uploaded");
+            foreach (var file in selectedFormsFiles)
+            {
+                long maxFileSize = 1024L * 1024L * 1024L * 2L;
+                var success = await azBlob.UploadFileToBlobAsync(FILEBLOBS.DOCUMENTS, file.Name, file.ContentType, file.OpenReadStream(maxAllowedSize: maxFileSize));
+                if (!a.Any(x => x.Name == file.Name && x.Type == file.ContentType && x.Group == AttachmentsForAllTypes.Forms.ToString()))
+                    a.Add(new AttachmentsForAll() { Id = 0, Name = file.Name, Group = AttachmentsForAllTypes.Forms.ToString(), Type = file.ContentType, CreatedBy = userFullName });
+                //uploadConsole?.Log($"Name: {file.Name} - Size: {file.Size} bytes - Type: {file.ContentType}");
+            }
+            await afar.UpdateAttachmentForAllAsync(a);
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The following Error occured: {ex?.ToString()}");
+        }
+        await GetAttachmentsForAllAsync();
+    }
+
+    async void OnExandGInputFileChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            selectedExandGFiles = e.GetMultipleFiles();
+            //uploadConsole?.Log($"{selectedExandGFiles.Count} file(s) uploaded");
+            foreach (var file in selectedExandGFiles)
+            {
+                long maxFileSize = 1024L * 1024L * 1024L * 2L;
+                var success = await azBlob.UploadFileToBlobAsync(FILEBLOBS.DOCUMENTS, file.Name, file.ContentType, file.OpenReadStream(maxAllowedSize: maxFileSize));
+                if (!a.Any(x => x.Name == file.Name && x.Type == file.ContentType && x.Group == AttachmentsForAllTypes.ExandG.ToString()))
+                    a.Add(new AttachmentsForAll() { Id = 0, Name = file.Name, Group = AttachmentsForAllTypes.ExandG.ToString(), Type = file.ContentType, CreatedBy = userFullName });
+                //uploadConsole?.Log($"Name: {file.Name} - Size: {file.Size} bytes - Type: {file.ContentType}");
+            }
+            await afar.UpdateAttachmentForAllAsync(a);
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The following Error occured: {ex?.ToString()}");
+        }
+        await GetAttachmentsForAllAsync();
+    }
+
+    async void OnFileDeleteClick(AttachmentsForAll attachment)
+    {
+        try
+        {
+            //don't delete from Azure just the database pointer
+
+            // var deleteResponse = await azBlob.DeleteFileFromBlobAsync(FILEBLOBS.DOCUMENTS, attachment?.Name ?? "");
+            // if (deleteResponse)
+            // {
+            a.Remove(attachment ?? new AttachmentsForAll());
+            //uploadConsole?.Log(attachment?.Name + " Deleted!!");
+            await afar.DeleteAssignmentForAllAsync(attachment ?? new AttachmentsForAll());
+            //}
+
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The following Error occured: {ex?.ToString()}");
+        }
+        await GetAttachmentsForAllAsync();
+    }
+
+    private async void OnFileViewClick(AttachmentsForAll attachment)
+    {
+        try
+        {
+            var sasToken = azBlob.GetBlobSASTOkenByFile(attachment?.Name ?? "");
+            if (sasToken != null)
+            {
+                string fileUrl = attachment?.Url + "?" + sasToken;
+                await jsRuntime.InvokeAsync<object>("open", fileUrl, "_blank");
+            }
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The following Error occured: {ex?.ToString()}");
+        }
+    }
+}

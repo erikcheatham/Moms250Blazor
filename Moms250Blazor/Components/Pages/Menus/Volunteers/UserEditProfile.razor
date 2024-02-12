@@ -1,0 +1,330 @@
+﻿@page "/UserEditProfile"
+
+@inject IExceptionLogRepo eLog;
+@inject IUsersRepo ur;
+@inject IStatesRepo sr;
+
+<div class="container-fluid">
+    <div class="row mt-2 text-center">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <h2 id="pageHeader">Edit User Profile</h2>
+        </div>
+        <div class="form-group col-sm-2"></div>
+        <hr />
+    </div><br /><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="UserName">UserName</label>
+            <input readonly="readonly" class="form-control" type="text" id="UserName" name="UserName" @bind-value="@userEditing.UserName" autocomplete="off" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="Email">Email</label>
+            <input readonly="readonly" class="form-control" type="text" id="Email" name="Email" @bind-value="@userEditing.Email" autocomplete="off" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="FirstName">FirstName</label>
+            <input class="form-control" type="text" id="FirstName" name="FirstName" @bind-value="@userEditing.FirstName" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="LastName">LastName</label>
+            <input class="form-control" type="text" id="LastName" name="LastName" @bind-value="@userEditing.LastName" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="State">State</label>
+            <select class="form-select" id="State" name="State" @onchange="StateSelected">
+                @if (userEditing.State is not null)
+                {
+                    @foreach (var s in stateList)
+                    {
+                        @if (s.S == userEditing.State)
+                        {
+                            <option selected value="@s.S">@s.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@s.S">@s.Text</option>
+                        }
+                    }
+                }
+                else
+                {
+                    @foreach (var s in stateList)
+                    {
+                        if (s.S == "IL")
+                        {
+                            <option selected value="@s.S">@s.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@s.S">@s.Text</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <div class="form-group col d-grid justify-content-center text-center">
+                <input class="form-control form-check-input form-m250-checkbox" id="Active" name="Active" type="checkbox" @bind="@userEditing.Active" />
+                <label class="fw-bold form-m250-checkbox-label" for="Active">
+                    Active
+                </label>
+            </div>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="PhoneNumber">PhoneNumber</label>
+            <input class="form-control" type="text" id="PhoneNumber" name="PhoneNumber" @bind-value="@userEditing.PhoneNumber" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label for="ManagerId" class="fw-bold w-100">Manager</label>
+            <select id="ManagerId" name="ManagerId" class="form-select" @onchange="(e) => UpdateManagerId(e.Value?.ToString())">
+                <option value="">Select Manager</option>
+                @foreach (var m in managerList ?? new List<MyListItems>())
+                {
+                    @if (userEditing.ManagerId == m.S)
+                    {
+                        <option selected value="@m.S">@m.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@m.S">@m.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col d-grid justify-content-center text-center">
+            <input class="form-control form-check-input form-m250-checkbox" id="Volunteer" name="Volunteer" type="checkbox" @bind="@userEditing.Volunteer" />
+            <label class="fw-bold form-m250-checkbox-label" for="Volunteer">
+                Volunteer
+            </label>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col d-grid justify-content-center text-center">
+            @if (allowCoordinatorChange)
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="Coordinator" name="Coordinator" type="checkbox" @bind="@userEditing.Coordinator" />
+            }
+            else
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="Coordinator" name="Coordinator" type="checkbox" disabled @bind="@userEditing.Coordinator" />
+            }
+            <label class="fw-bold form-m250-checkbox-label" for="Coordinator">
+                Coordinator
+            </label>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col d-grid justify-content-center text-center">
+            @if (allowSeniorCoordinatorChange)
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="SeniorCoordinator" name="SeniorCoordinator" type="checkbox" @bind="@userEditing.SeniorCoordinator" />
+            }
+            else
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="SeniorCoordinator" name="SeniorCoordinator" type="checkbox" disabled @bind="@userEditing.SeniorCoordinator" />
+            }
+            <label class="fw-bold form-m250-checkbox-label" for="SeniorCoordinator">
+                Senior Coordinator
+            </label>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col d-grid justify-content-center text-center">
+            @if (allowNationalChairChange)
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="NationalChair" name="NationalChair" type="checkbox" @bind="@userEditing.NationalChair" />
+            }
+            else
+            {
+                <input class="form-control form-check-input form-m250-checkbox" id="NationalChair" name="NationalChair" type="checkbox" disabled @bind="@userEditing.NationalChair" />
+            }
+            <label class="fw-bold form-m250-checkbox-label" for="NationalChair">
+                National Chair
+            </label>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="Residence">Residence</label>
+            <input class="form-control" type="text" id="Residence" name="Residence" @bind-value="@userEditing.Residence" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="form-group col d-grid justify-content-center text-center">
+        <input class="form-control form-check-input form-m250-checkbox" id="AppAngel" name="AppAngel" type="checkbox" @bind="@userEditing.AppAngel" />
+        <label class="fw-bold form-m250-checkbox-label" for="AppAngel">
+            App Angel
+        </label>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="Comments">Comments</label>
+            <input class="form-control" type="text" id="Comments" name="Comments" @bind-value="@userEditing.Comments" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="PreferencesAndSkills">PreferencesAndSkills</label>
+            <input class="form-control" type="text" id="PreferencesAndSkills" name="PreferencesAndSkills" @bind-value="@userEditing.PreferencesAndSkills" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="fw-bold w-100" for="Chapter">Chapter</label>
+            <input class="form-control" type="text" id="Chapter" name="Chapter" @bind-value="@userEditing.Chapter" />
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <label class="text-danger fw-bold fs-5 w-100 float-start" id="lblSaveMessage" name="lblSaveMessage" for="SaveChanges">@returnMessage</label>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+    <div class="row mt-2">
+        <div class="form-group col-sm-2"></div>
+        <div class="form-group col-sm-8">
+            <button class="form-control fs-5 btn-primary w-100 float-end" id="SaveChanges" name="SaveChanges" @onclick="@UpdateUser" disabled="@isSubmitting">Save Changes</button>
+        </div>
+        <div class="form-group col-sm-2"></div>
+    </div><br />
+
+    @* <Footer /> *@
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "uid")]
+    public string Id { get; set; } = "";
+    ApplicationUser userEditing = new ApplicationUser();
+
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+    public string userFullName { get; set; } = "";
+    ApplicationUser thisUser = new ApplicationUser();
+
+    bool allowCoordinatorChange = false;
+    bool allowSeniorCoordinatorChange = false;
+    bool allowNationalChairChange = false;
+
+
+    List<MyListItems> stateList => Task.Run(() => sr.GetMyListItemsStatesAsync()).GetAwaiter().GetResult() ?? new List<MyListItems>();
+    List<MyListItems> managerList => Task.Run(() => ur.GetMyListItemsAllUsersAsync(MyUserListItemsType.FullNameAsSelectorManagersOnly)).GetAwaiter().GetResult() ?? new List<MyListItems>();
+
+    bool isSubmitting;
+    string? returnMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            base.OnInitialized();
+            var user = (await AuthStat).User;
+            if (user?.Identity?.IsAuthenticated ?? false)
+            {
+                userName = user?.Identity?.Name ?? "";
+                if (!string.IsNullOrEmpty(userName))
+                    await GetApplicationUser();
+            }
+            userEditing = await ur.GetApplicationUserByIdAsync(Id);
+        }
+    }
+
+    async Task GetApplicationUser()
+    {
+        thisUser = await ur.GetApplicationUserByUsernameAsync(userName);
+        userFullName = thisUser.FullName ?? "";
+        if (thisUser.Coordinator) { allowCoordinatorChange = true; }
+        if (thisUser.SeniorCoordinator) { allowSeniorCoordinatorChange = true; }
+        if (thisUser.NationalChair) { allowNationalChairChange = true; }
+    }
+
+    void UpdateManagerId(string? val) => userEditing.ManagerId = val;
+
+    void StateSelected(ChangeEventArgs e)
+    {
+        if (stateList is null) return;
+        var x = e?.Value?.ToString();
+        if (!string.IsNullOrEmpty(x))
+            userEditing.State = x;
+    }
+
+    async Task UpdateUser()
+    {
+        isSubmitting = true;
+        returnMessage = "";
+
+        try
+        {
+            if (userEditing.Active)
+                userEditing.LockoutEnabled = true;
+            else
+                userEditing.LockoutEnabled = false;
+
+            userEditing.Modified = DateTime.Now;
+            userEditing.ModifiedBy = userFullName;
+            var result = await ur.UpdateApplicationUserAsync(userEditing);
+            returnMessage = "Changes Saved";
+            isSubmitting = false;
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            returnMessage = $"There Was an Error: {ex.ToString()}";
+        }
+        StateHasChanged();
+    }
+}

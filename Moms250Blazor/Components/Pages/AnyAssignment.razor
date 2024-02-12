@@ -1,0 +1,691 @@
+﻿@page "/AnyAssignment"
+
+<PageTitle>Assignment</PageTitle>
+
+@inject NavigationManager NavigationManager
+@inject IAssignmentsRepo ar
+@inject IStatesRepo sr
+@inject IUsersRepo ur
+@inject IAzureBlobService azBlob
+@inject IExceptionLogRepo eLog;
+@inject IJSRuntime jsRuntime
+
+<div class="container-fluid">
+
+    @if (!loadComplete)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+
+        <div class="row mt-2 text-center">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8"><h1>Assignment</h1></div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+
+        <br />
+        <br />
+        <div class="row mt-2">
+            <div class="form-group col">
+                <label class="fw-bold" for="ApplicantLName">Last Name</label>
+                <input class="form-control" id="ApplicantLName" name="ApplicantLName" type="text" @bind-value="@a.ApplicantLname" />
+            </div>
+            <div class="form-group col">
+                <label class="fw-bold" for="ApplicantFName">First Name</label>
+                <input class="form-control" id="ApplicantFName" name="ApplicantFName" type="text" @bind-value="@a.ApplicantFname" />
+            </div>
+            <div class="form-group col">
+                <label class="fw-bold w-100" for="ApplicantState">State</label>
+                <select class="form-select" id="ApplicantState" name="ApplicantState" @onchange="StateSelected">
+                    @if (a.ApplicantState is not null)
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            @if (s.S == a.ApplicantState)
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var s in stateList)
+                        {
+                            if (s.S == "IL")
+                            {
+                                <option selected value="@s.S">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.S">@s.Text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group col">
+                <label class="fw-bold" for="ApplicantChapter">Chapter</label>
+                <input class="form-control" id="ApplicantChapter" name="ApplicantChapter" type="text" @bind-value="@a.ApplicantChapter" />
+            </div>
+            <div class="row mt-2">
+                <h4>Contact Information</h4>
+                <hr>
+                <div class="form-group col">
+                    <label class="fw-bold" for="ChapterContact">Chapter Contact</label>
+                    <input class="form-control" id="ChapterContact" name="ChapterContact" type="text" @bind-value="@a.ChapterContact" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold" for="ChapterContactEmail">Contact Email</label>
+                    <input class="form-control" id="ChapterContactEmail" name="ChapterContactEmail" type="text" @bind-value="@a.ChapterContactEmail" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold" for="VerifyingGenie">Verifying Genie</label>
+                    <input class="form-control" id="VerifyingGenie" name="VerifyingGenie" type="text" @bind-value="@a.VerifyingGenie" />
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="FirstReview">1st Review Date</label>
+                    @* <RadzenDatePicker @bind-Value=@a.FirstReview DateFormat="MM/dd/yyyy" Name="FirstReview" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="FirstReview" name="FirstReview" @bind-value="@a.FirstReview" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold" for="PatriotNumber">Patriot Number</label>
+                    <input class="form-control" id="PatriotNumber" name="PatriotNumber" type="text" @bind-value="@a.PatriotNumber" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold" for="PatriotName">Patriot Name</label>
+                    <input class="form-control" id="PatriotName" name="PatriotName" type="text" @bind-value="@a.PatriotName" />
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="Registrar" name="Registrar" type="checkbox" @bind="@a.Registrar" />
+                    <label class="fw-bold form-m250-checkbox-label" for="Registrar">
+                        Registrar
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="DocReceived" name="DocReceived" type="checkbox" @bind="@a.DocReceived" />
+                    <label class="fw-bold form-m250-checkbox-label" for="DocReceived">
+                        Docs Received
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="PermissionLetter" name="PermissionLetter" type="checkbox" @bind="@a.PermissionLetter" />
+                    <label class="fw-bold form-m250-checkbox-label" for="PermissionLetter">
+                        Permission Letter
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="NewChildOfPatriot" name="NewChildOfPatriot" type="checkbox" @bind="@a.NewChildOfPatriot" />
+                    <label class="fw-bold form-m250-checkbox-label" for="NewChildOfPatriot">
+                        New Child Of Patriot
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center form-m250-checkbox">
+                    <input class="form-control form-check-input form-m250-checkbox" id="NewPatriot" name="NewPatriot" type="checkbox" @bind="@a.NewPatriot" />
+                    <label class="fw-bold form-m250-checkbox-label" for="NewPatriot">
+                        New Patriot
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="Correction" name="Correction" type="checkbox" @bind="@a.Correction" />
+                    <label class="fw-bold form-m250-checkbox-label" for="Correction">
+                        Correction
+                    </label>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <h4>Status Information</h4>
+                <hr>
+                <div class="form-group col">
+                    <label class="fw-bold" for="ApplicationType">App Type</label>
+                    <input class="form-control" id="ApplicationType" name="ApplicationType" type="text" @bind-value="@a.ApplicationType" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold" for="ApplicationStatus">Status</label>
+                    <input class="form-control" id="ApplicationStatus" name="ApplicationStatus" type="text" @bind-value="@a.ApplicationStatus" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="ApplicationDateAssigned">Date Assigned</label>
+                    @* <RadzenDatePicker @bind-Value=@a.ApplicationDateAssigned DateFormat="MM/dd/yyyy" Name="ApplicationDateAssigned" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="ApplicationDateAssigned" name="ApplicationDateAssigned" @bind-value="@a.ApplicationDateAssigned" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="DateOfLastAirletter">Date Of Last AIR Letter</label>
+                    @* <RadzenDatePicker @bind-Value=@a.DateOfLastAirletter DateFormat="MM/dd/yyyy" Name="DateOfLastAirletter" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="DateOfLastAirletter" name="DateOfLastAirletter" @bind-value="@a.DateOfLastAirletter" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="ResponseDate">Response Date</label>
+                    @* <RadzenDatePicker @bind-Value=@a.ResponseDate DateFormat="MM/dd/yyyy" Name="ResponseDate" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="ResponseDate" name="ResponseDate" @bind-value="@a.ResponseDate" />
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="DateComplete">Date Sent</label>
+                    @* <RadzenDatePicker @bind-Value=@a.DateComplete DateFormat="MM/dd/yyyy" Name="ResponseDate" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="DateComplete" name="DateComplete" @bind-value="@a.DateComplete" />
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="NCUpdateRequested" name="NCUpdateRequested" type="checkbox" @bind="@a.NcupdateRequested" />
+                    <label class="fw-bold form-m250-checkbox-label" for="NCUpdateRequested">
+                        Requesting Update
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="VolunteerContactChapter" name="VolunteerContactChapter" type="checkbox" @bind="@a.VolunteerContactChapter" />
+                    <label class="fw-bold form-m250-checkbox-label" for="VolunteerContactChapter">
+                        Requesting Volunteer Contact Chapter
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="HelpRequest" name="HelpRequest" type="checkbox" @bind="@a.HelpRequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="HelpRequest">
+                        Help Request
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="ReassignmentRequest" name="ReassignmentRequest" type="checkbox" @bind="@a.ReassignmentRequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="ReassignmentRequest">
+                        Reassignment Request
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="AAARequest" name="AAARequest" type="checkbox" @bind="@a.Aaarequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="AAARequest">
+                        AAA Request
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="ARTRequest" name="ARTRequest" type="checkbox" @bind="@a.Artrequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="ARTRequest">
+                        ART Request
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="ReturnRequest" name="ReturnRequest" type="checkbox" @bind="@a.ReturnRequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="ReturnRequest">
+                        Return Request
+                    </label>
+                </div>
+                <div class="form-group col d-grid justify-content-center text-center">
+                    <input class="form-control form-check-input form-m250-checkbox" id="SpecialTeamRequest" name="SpecialTeamRequest" type="checkbox" @bind="@a.SpecialTeamRequest" />
+                    <label class="fw-bold form-m250-checkbox-label" for="SpecialTeamRequest">
+                        Special Team Request
+                    </label>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <h4>Volunteer Information</h4>
+                </div>
+                <div class="form-group col">
+                    <button class="form-control btn-info text-white fw-bold fs-5" name="AddVolunteer" @onclick="AddVolunteer">Add Volunteer Line</button>
+                </div>
+                <div class="form-group col"></div>
+                <hr>
+            </div>
+            @for (int i = 0; i < volunteerList?.Count(); i++)
+            {
+                int index = i;
+                string email = "";
+                string stateAb = "";
+                string leadVolunteerInputId = $"VolunteerList{i}Lead";
+                string dateVolunteerInputId = $"VolunteerList{i}Date";
+                string volunteerListInputId = $"VolunteerList{i}";
+                string emailVolunteerListInputId = $"VolunteerList{i}Email";
+                string stateVolunteerListInputId = $"VolunteerList{i}State";
+                string removeVolunteerListInputId = $"VolunteerList{i}Remove";
+                <div class="row mt-2">
+                    <div class="form-group col-sm-2 d-grid justify-content-center text-center">
+                        @* <RadzenCheckBox class="form-control form-check-input form-m250-checkbox" Name="VolunteerLeadVolunteer" TValue="bool" Value=@volunteerList[i].LeadVolunteer Change="@(e => UpdateVolunteerLine(index, e.ToString()))" /> *@
+                        <input class="form-control form-check-input form-m250-checkbox" id="@leadVolunteerInputId" name="@leadVolunteerInputId" type="checkbox" value="@volunteerList[i].LeadVolunteer" checked="@volunteerList[i].LeadVolunteer" @onchange="(e => UpdateVolunteerLine(index, e?.Value?.ToString()))" />
+                        <label class="fw-bold form-m250-checkbox-label" for="@leadVolunteerInputId">
+                            Lead Volunteer
+                        </label>
+                    </div>
+                    <div class="form-group col-sm-2">
+                        <label class="fw-bold w-100" for="@dateVolunteerInputId">Volunteer Date Assigned</label>
+                        @* <RadzenDatePicker TValue="DateTimeOffset" Value=@volunteerList[i].DateAssigned Change="@(e => UpdateVolunteerLine(index, e?.ToString()))" DateFormat="MM/dd/yyyy" Name="VolunteerDateAssigned" Placeholder="Choose Date" /> *@
+                        <input class="form-control" type="date" onfocus="this.showPicker()" id="@dateVolunteerInputId" name="@dateVolunteerInputId" value="@volunteerList[i].DateAssigned.ToString("yyy-MM-dd")" @onchange="(e => UpdateVolunteerLine(index, e?.Value?.ToString()))" />
+                    </div>
+                    <div class="form-group col">
+                        <label class="fw-bold w-100" for="@volunteerListInputId">Volunteer List</label>
+                        <select class="form-select" id="@volunteerListInputId" name="@volunteerListInputId" @onchange="(e) => UpdateVolunteerLine(index, e.Value?.ToString())">
+                            <option value="">Select a Volunteer</option>
+                            @foreach (var v in fullVolunteerList ?? new List<MyListItems>())
+                            {
+                                @if (volunteerList[i].AppUserId == v.I)
+                                {
+                                    //var vu = v.UserData ?? new UserDatum();
+                                    email = @v.Attrb1 ?? "";
+                                    stateAb = @v.Attrb2 ?? "";
+                                    <option selected value="@v.I">@v.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@v.I">@v.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col">
+                        <label class="fw-bold w-100" for="@emailVolunteerListInputId">Volunteer Email Address</label>
+                        <input class="form-control" id="@emailVolunteerListInputId" name="@emailVolunteerListInputId" type="text" @bind-value="email" disabled />
+                    </div>
+                    <div class="form-group col">
+                        <label class="fw-bold w-100" for="@stateVolunteerListInputId">Volunteer State</label>
+                        <select class="form-select" id="@stateVolunteerListInputId" name="@stateVolunteerListInputId" disabled>
+                            <option value=""></option>
+                            @if (stateAb is not null)
+                            {
+                                foreach (var s in stateList)
+                                {
+                                    @if (stateAb == s.S)
+                                    {
+                                        <option selected value="@s.S">@s.Text</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@s.S">@s.Text</option>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                foreach (var s in stateList)
+                                {
+                                    <option value="@s.S">@s.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col">
+                        <label class="fw-bold w-100" for="@removeVolunteerListInputId">&nbsp;</label>
+                        <button class="form-control btn-info fw-bold text-white fs-6" id="@removeVolunteerListInputId" name="@removeVolunteerListInputId" @onclick="() => RemoveVolunteerLine(index)">Remove Volunteer</button>
+                    </div>
+                </div>
+            }
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <label class="fw-bold" for="Notes">CLT Notes: </label>
+                    <textarea class="form-control" id="StateProblem" name="StateProblem" rows="3" @bind="@a.StateProblem"></textarea>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <h4>Assignment History</h4>
+                <hr>
+                <div class="form-group col">
+                    <label class="fw-bold" for="MemberInitials">User</label>
+                    <input class="form-control" id="MemberInitials" name="MemberInitials" type="text" @bind-value="@a.MemberInitials">
+                </div>
+                <div class="form-group col">
+                    <label class="fw-bold w-100" for="LastContactWithChapterDate">Last Contact With Chapter Date</label>
+                    @* <RadzenDatePicker @bind-Value=@a.LastContactWithChapterDate DateFormat="MM/dd/yyyy" Name="LastContactWithChapterDate" Placeholder="Choose Date" /> *@
+                    <input class="form-control" type="date" onfocus="this.showPicker()" id="LastContactWithChapterDate" name="LastContactWithChapterDate" @bind-value="@a.LastContactWithChapterDate" />
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <label class="fw-bold" for="Notes">Coordinator Notes</label>
+                    <textarea class="form-control" id="Notes" name="Notes" rows="3" @bind="@a.Notes"></textarea>
+                    @* <InputTextArea @bind-Value="@a.Notes" id="Notes" DisplayName="Notes" placeholder class="form-control-plaintext" /> *@
+                </div>
+            </div>
+            <div class="row mt-2">
+                <h4>Attachments</h4>
+                <hr>
+                <div class="form-group col">
+                    <RadzenCard>
+                        <label class="fw-bold" for="AttachmentUpload">Upload Attachment(s)</label>
+                        @* <input type="file" class="form-control" id="Attachment" name="Attachment" multiple=""> *@
+                        <InputFile @key=@(inputFileId) class="form-control" id="AttachmentUpload" OnChange="@OnInputFileChange" multiple />
+                        @* <RadzenUpload Multiple="true" Url="upload/multiple"  Progress=@(args => OnProgress(args, "Multiple files upload")) class="w-100" InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "select file" }})" /> *@
+                    </RadzenCard>
+                </div>
+            </div>
+            <div class="row mt-2">
+                @foreach (var f in a.Attachments)
+                {
+                    <div class="form-group col">
+                        <NavLink class="btn btn-info text-white fw-bold" @onclick="() => OnFileViewClick(f)">
+                            @f.Name
+                        </NavLink>
+                        <a class="btn btn-danger fw-bold" @onclick="() => OnFileDeleteClick(f)">Delete</a>
+                        <br />
+                        <br />
+                    </div>
+                }
+            </div>
+
+            @* <div class="row mt-2">
+                <div class="form-group col">
+                    <EventConsole @ref=@uploadConsole />
+                </div>
+            </div> *@
+
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <label class="text-danger fw-bold fs-5 w-100 float-start" for="SaveChanges">@returnMessage</label>
+                </div>
+                <div class="form-group col">
+                    <button class="form-control fs-5 btn-primary fw-bold w-50 float-end" id="SaveChanges" name="SaveChanges" @onclick="@UpdateAssignment" disabled="@isSubmitting">Save Changes</button>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="form-group col"></div>
+                <div class="form-group col">
+                    <button class="form-control fs-5 btn-info fw-bold text-white w-50 float-end" id="StartNewAssignment" name="StartNewAssignment" @onclick="@ResetAssignment" hidden="@hideResetButton">Start New</button>
+                </div>
+            </div>
+
+            @if (thisUser?.NationalChair ?? false)
+            {
+                <div class="row mt-2">
+                    <div class="form-group col">
+                        <a class="btn btn-danger fw-bold" @onclick="@DeleteAssignment">Delete</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    @* <NavigationFooter /> *@
+    @* <Footer /> *@
+</div>
+
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "ID")]
+    public int ID { get; set; } = 0;
+
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; } = null!;
+    public string userName { get; set; } = "";
+    public string userFullName { get; set; } = "";
+
+    Assignment a = new Assignment();
+    ApplicationUser thisUser = new ApplicationUser();
+    List<MyListItems> stateList => Task.Run(() => sr.GetMyListItemsStatesAsync()).GetAwaiter().GetResult() ?? new List<MyListItems>();
+    List<MyListItems> fullVolunteerList => Task.Run(() => ur.GetMyListItemsAllUsersAsync(MyUserListItemsType.FullNameAsSelectorWithEmailAndStateAttributes)).GetAwaiter().GetResult() ?? new List<MyListItems>();
+
+    public Guid inputFileId = Guid.NewGuid();
+    //EventConsole? uploadConsole;
+    IReadOnlyList<IBrowserFile>? selectedFiles;
+
+    public bool loadComplete { get; set; } = false;
+
+    bool isSubmitting;
+    //bool isDeleting;
+    bool hideResetButton = true;
+    string? returnMessage;
+    List<Volunteer> volunteerList = new List<Volunteer>();
+    //List<Attachment> attachmentList = new List<Attachment>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //await GetAssignmentAsync();
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            base.OnInitialized();
+            var user = (await AuthStat).User;
+            if (user?.Identity?.IsAuthenticated ?? false)
+            {
+                userName = user?.Identity?.Name ?? "";
+                thisUser = await ur.GetApplicationUserByUsernameAsync(userName ?? "");
+                userFullName = thisUser.FullName ?? "";
+            }
+            await GetAssignmentAsync();
+        }
+        // if (volunteerList.Count > 0 && volunteerList.FirstOrDefault()?.AspNetUsers == null)
+        // {
+        //     //do something
+        //     await GetAssignmentAsync();
+        //     //await GetAssignmentAsync();
+        //     StateHasChanged();
+        // }
+        await Task.CompletedTask;
+    }
+
+    async Task GetAssignmentAsync()
+    {
+        if (ID != 0)
+        {
+            a = await ar.GetAssignmentForAssignmentRouteAsync(ID);
+            volunteerList = a.Volunteers.ToList();
+        }
+        else
+        {
+            //a.VolunteersNavigation = Array.Empty<Volunteer>();
+            // if (volunteerList.Count == 0)
+            //     AddVolunteer();
+
+            // if (a.Attachments.Count == 0)
+            //     AddAttachment();
+            a.ApplicantState = "IL";
+        }
+        loadComplete = true;
+        StateHasChanged();
+    }
+
+    void ResetAssignment()
+    {
+        isSubmitting = false;
+        //isDeleting = false;
+        hideResetButton = true;
+
+        ID = 0;
+        a = new Assignment();
+        volunteerList = new List<Volunteer>();
+        //AddVolunteer();
+        a.ApplicantState = "IL";
+        selectedFiles = null;
+        returnMessage = "";
+        //uploadConsole?.Clear();
+        inputFileId = Guid.NewGuid();
+        StateHasChanged();
+        NavigationManager.NavigateTo($"/AnyAssignment");
+    }
+
+    void StateSelected(ChangeEventArgs e)
+    {
+        if (stateList is null) return;
+        var x = e?.Value?.ToString();
+        if (!string.IsNullOrEmpty(x))
+            a.ApplicantState = x;
+    }
+
+    void AddVolunteer() => volunteerList.Add(new Volunteer() { Id = 0, LeadVolunteer = false, DateAssigned = DateTime.Now, AppUserId = 0 });
+    //void UpdateVolunteerLine(int i, Volunteer vol) => volunteerList[i] = vol;
+    void UpdateVolunteerLine(int i, string? val)
+    {
+        if (bool.TryParse(val, out bool v))
+            volunteerList[i].LeadVolunteer = v;
+        else if (DateTime.TryParse(val, out DateTime dt))
+            volunteerList[i].DateAssigned = dt;
+        else if (!string.IsNullOrEmpty(val) && int.TryParse(val, out int Id))
+        {
+            //volunteerList[i - 1].Id = i;
+            //volunteerList[i].AspNetUsersId = fullVolunteerList?.Where(x => x.I == Id)?.FirstOrDefault()?.S ?? "";
+            // volunteerList[i].AspNetUsers = fullVolunteerList?.Where(x => x.Id == val).FirstOrDefault() ?? new AspNetUser();
+            // volunteerList[i].UserData = fullVolunteerList?.Where(x => x.Id == val).FirstOrDefault()?.UserData ?? new UserDatum();
+            volunteerList[i].AppUserId = Id;
+            volunteerList[i].CreatedBy = userFullName;
+            volunteerList[i].ModifiedBy = userFullName;
+        }
+        else
+        {
+            volunteerList[i].Id = 0;
+            volunteerList[i].LeadVolunteer = false;
+            volunteerList[i].DateAssigned = DateTime.Now;
+            //volunteerList[i].AspNetUsersId = "";
+            // volunteerList[i].AspNetUsers = new AspNetUser();
+            // volunteerList[i].UserData = new UserDatum();
+            volunteerList[i].AppUserId = 0;
+            volunteerList[i].CreatedBy = userFullName;
+            volunteerList[i].ModifiedBy = userFullName;
+        }
+    }
+
+    void RemoveVolunteerLine(int i) => volunteerList.RemoveAt(i);
+
+    async void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        //uploadConsole?.Clear();
+        //uploadConsole?.Log($"{selectedFiles.Count} file(s) uploaded");
+        foreach (var file in selectedFiles)
+        {
+            long maxFileSize = 1024L * 1024L * 1024L * 2L;
+            var success = await azBlob.UploadFileToBlobAsync(FILEBLOBS.DOCUMENTS, file.Name, file.ContentType, file.OpenReadStream(maxAllowedSize: maxFileSize));
+            if (!a.Attachments.Any(x => x.Name == file.Name))
+                a.Attachments.Add(new Attachment() { Id = 0, AssignmentId = a.Id, Name = file.Name, Type = file.ContentType, CreatedBy = userFullName ?? "", ModifiedBy = userFullName ?? "" });
+            //uploadConsole?.Log($"Name: {file.Name} - Size: {file.Size} bytes - Type: {file.ContentType}");
+        }
+        await UpdateAssignment();
+    }
+
+    async void OnFileDeleteClick(Attachment attachment)
+    {
+        try
+        {
+            //don't delete from Azure Storage just the database record reference
+
+            //var deleteResponse = await azBlob.DeleteFileFromBlobAsync(FILEBLOBS.DOCUMENTS, attachment?.Name ?? "");
+            //if (deleteResponse)
+            //{
+            a.Attachments.Remove(attachment ?? new Attachment());
+            //uploadConsole?.Log(attachment?.Name + " Deleted!!");
+            await UpdateAssignment();
+            //}
+
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The Following Error Occured: {ex.Message}");
+            returnMessage = "Something went wrong! Please try again.";
+        }
+        await GetAssignmentAsync();
+    }
+
+    async void OnFileViewClick(Attachment attachment)
+    {
+        try
+        {
+            var sasToken = azBlob.GetBlobSASTOkenByFile(attachment?.Name ?? "");
+            if (sasToken != null)
+            {
+                string fileUrl = attachment?.Url + "?" + sasToken;
+                await jsRuntime.InvokeAsync<object>("open", fileUrl, "_blank");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The Following Error Occured: {ex.Message}");
+            returnMessage = "Something went wrong! Please try again.";
+        }
+    }
+
+    async Task UpdateAssignment()
+    {
+        isSubmitting = true;
+        returnMessage = "";
+
+        try
+        {
+            a.ApplicantFullName = $"{a.ApplicantLname}, {a.ApplicantFname}";
+            if (volunteerList.Count > 0)
+            {
+                if (volunteerList.Any(x => x.AppUserId == 0))
+                {
+                    //uploadConsole?.Log($"A Volunteer Name Is Not Chosen For One Of Your Volunteers, Correct Before Saving Or Remove Volunteer.");
+                    returnMessage = $"A Volunteer Name Is Not Chosen For One Of Your Volunteers, Correct Before Saving Or Remove Volunteer.";
+                    isSubmitting = false;
+                    return;
+                }
+                volunteerList.ForEach(x => x.AppUser = null!);
+                foreach (var x in volunteerList)
+                {
+                    if (!string.IsNullOrEmpty(x.CreatedBy))
+                        x.ModifiedBy = userFullName ?? "";
+                    else
+                        x.CreatedBy = userFullName ?? "";
+                }
+                a.Volunteers = volunteerList;
+            }
+
+            a.Id = await ar.UpdateAssignmentFromAssingmentRouteAsync(a, userFullName ?? "");
+            //uploadConsole?.Log($"Changes Saved!!!");
+            returnMessage = "Changes Saved";
+            isSubmitting = false;
+            hideResetButton = false;
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            isSubmitting = false;
+            //uploadConsole?.Log($"The Following Error Occured: {ex.Message}");
+            returnMessage = $"Something went wrong! Please try again.";
+        }
+        StateHasChanged();
+    }
+
+    async Task DeleteAssignment()
+    {
+        try
+        {
+            if (await ar.DeleteAssignmentAsync(a))
+            {
+                NavigationManager.NavigateTo($"/");
+            }
+            else
+            {
+                throw new Exception();
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Data.ExceptionLog el = new Data.ExceptionLog()
+                {
+                    Message = ex.Message,
+                    StackTrace = ex.StackTrace
+                };
+            await eLog.AddExceptionLogAsync(el, userFullName ?? "System");
+            //uploadConsole?.Log($"The Following Error Occured: {ex.Message}");
+            returnMessage = $"Something went wrong! Please try again.";
+        }
+    }
+}
