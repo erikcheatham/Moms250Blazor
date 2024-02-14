@@ -1,5 +1,4 @@
-# Moms250Blazor
-Public DAR Blazor Demo (.NET 8)
+# Public DAR Blazor Demo (.NET 8)
 
 To run this application on your computer you will need several things first
 
